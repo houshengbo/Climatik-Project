@@ -109,14 +109,6 @@ The easiest way to install the PowerCapping Controller is using our deployment s
 ./scripts/deploy.sh
 ```
 
-This script will:
-1. Deploy cert-manager (if not already installed)
-2. Create necessary Custom Resource Definitions (CRDs)
-3. Set up RBAC permissions
-4. Deploy the PowerCapping Controller
-5. Deploy the FreqTuning Recommender
-6. Deploy the FreqTuner DaemonSet
-
 ### 5.2 Verification
 
 Verify the installation by checking the status of the deployed components:
@@ -136,13 +128,6 @@ To remove all components from your cluster:
 ```sh
 ./scripts/undeploy.sh
 ```
-
-This will:
-1. Remove all PowerCapping Controller components
-2. Remove FreqTuning Recommender
-3. Remove FreqTuner DaemonSet
-4. Delete CRDs and RBAC resources
-5. Clean up any remaining resources
 
 ### 5.4 Manual Installation
 
