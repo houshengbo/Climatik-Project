@@ -101,7 +101,75 @@ This architecture allows for dynamic power management, workload-specific policie
 
 ## 5. Installation
 
-[... installation section ...]
+### 5.1 Quick Installation
+
+The easiest way to install the PowerCapping Controller is using our deployment script:
+
+```sh
+./scripts/deploy.sh
+```
+
+This script will:
+1. Deploy cert-manager (if not already installed)
+2. Create necessary Custom Resource Definitions (CRDs)
+3. Set up RBAC permissions
+4. Deploy the PowerCapping Controller
+5. Deploy the FreqTuning Recommender
+6. Deploy the FreqTuner DaemonSet
+
+### 5.2 Verification
+
+Verify the installation by checking the status of the deployed components:
+
+```sh
+# Check if controllers are running
+kubectl get pods -n climatik-project
+
+# Verify CRDs are installed
+kubectl get crds | grep climatik.io
+```
+
+### 5.3 Uninstallation
+
+To remove all components from your cluster:
+
+```sh
+./scripts/undeploy.sh
+```
+
+This will:
+1. Remove all PowerCapping Controller components
+2. Remove FreqTuning Recommender
+3. Remove FreqTuner DaemonSet
+4. Delete CRDs and RBAC resources
+5. Clean up any remaining resources
+
+### 5.4 Manual Installation
+
+If you prefer to install components manually or customize the installation, refer to our [detailed installation guide](docs/manual-installation.md).
+
+### 5.5 Troubleshooting
+
+If you encounter any issues during installation:
+
+1. Check the controller logs:
+   ```sh
+   kubectl logs -n climatik-project -l app=powercapping-controller
+   ```
+
+2. Verify RBAC permissions:
+   ```sh
+   kubectl auth can-i --as system:serviceaccount:climatik-project:powercapping-controller -n default get powercappingpolicies.climatik.io
+   kubectl auth can-i --as system:serviceaccount:climatik-project:powercapping-controller -n default patch powercappingpolicies.climatik.io/status
+   ```
+
+3. Ensure all CRDs are properly installed:
+   ```sh
+   kubectl get crd powercappingpolicies.climatik.io
+   kubectl get crd nodefrequencies.climatik.io
+   ```
+
+For more detailed troubleshooting steps, please refer to our [troubleshooting guide](docs/troubleshooting.md).
 
 ## 6. Usage
 
