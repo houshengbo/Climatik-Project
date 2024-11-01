@@ -56,16 +56,58 @@ The system uses Custom Resources (CRs) to define power capping policies and mana
 
 This architecture allows for dynamic power management, workload-specific policies, flexible algorithm integration, and seamless integration with Kubernetes environments, making it particularly useful for GPU-intensive workloads like LLM inference and training.
 
+## 4 Prerequisites
 
-## 4. Installation
+- go version v1.22.0+
+- docker version 17.03+
+- kubectl version v1.11.3+
+- Kind (Kubernetes in Docker) installed
+- (Optional) Access to a machine with NVIDIA GPUs for GPU-enabled testing
+
+### Setting up the Kubernetes Cluster
+
+#### For CPU-only machines:
+
+1. Create a Kind cluster:
+   ```sh
+   kind create cluster --name powercapping-cluster
+   ```
+
+2. Verify the cluster is running:
+   ```sh
+   kubectl cluster-info --context kind-powercapping-cluster
+   ```
+
+#### For GPU-enabled machines:
+
+1. Ensure you have the NVIDIA Container Toolkit installed on your host machine.
+
+2. Use the provided script to create a Kind cluster with GPU support:
+   ```sh
+   ./scripts/start_kind.sh
+   ```
+
+   This script will:
+   - Create a Kind cluster with the necessary configurations for GPU support
+   - Deploy cert-manager
+   - Install the NVIDIA GPU Operator
+   - Configure custom device plugin settings
+
+3. Verify the cluster and GPU support:
+   ```sh
+   kubectl get nodes
+   kubectl get pods -n gpu-operator
+
+
+## 5. Installation
 
 [... installation section ...]
 
-## 5. Usage
+## 6. Usage
 
 [... usage section ...]
 
-## 6. Documentation
+## 7. Documentation
 
 For a detailed description of the system architecture, including component interactions and workflow, please refer to our [design document](docs/design.md). This document provides:
 
@@ -77,7 +119,7 @@ For a detailed description of the system architecture, including component inter
 
 The design document offers a comprehensive overview of how the PowerCapping Controller works in conjunction with other components to achieve efficient power management for LLM inference workloads.
 
-## 7. Contributing
+## 8. Contributing
 
 Contributions to the project are welcome! If you find any issues or have suggestions for improvement, please open an issue or submit a pull request on the GitHub repository.
 
@@ -87,18 +129,18 @@ For detailed information on how to contribute to this project, please refer to o
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html).
 
-## 8. License
+## 9. License
 
 This project is licensed under the Apache License 2.0. For full details, see the [LICENSE](LICENSE) file.
 
-## 9. Code of Conduct
+## 10. Code of Conduct
 
 The Climatik Project follows the [CNCF Code of Conduct](code-of-conduct.md).
 
-## 10. Maintainers
+## 11. Maintainers
 
 For a list of project maintainers and their contact information, please see our [MAINTAINERS.md](MAINTAINERS.md) file.
 
-## 11. Contact
+## 12. Contact
 
 For any questions or inquiries, please contact the project maintainers listed in [MAINTAINERS.md](MAINTAINERS.md).

@@ -1,5 +1,8 @@
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+REGISTRY ?= quay.io/climatik-project
+IMAGE_NAME ?= powercapping-controller
+IMAGE_TAG ?= latest
+IMG ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.31.0
 
@@ -14,7 +17,7 @@ endif
 # Be aware that the target commands are only tested with Docker which is
 # scaffolded by default. However, you might want to replace it to use other
 # tools. (i.e. podman)
-CONTAINER_TOOL ?= docker
+CONTAINER_TOOL ?= podman
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -86,24 +89,30 @@ build: manifests generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
+# Architecture configuration
+ARCH ?= linux/amd64
+PLATFORMS ?= $(ARCH)
+# Set both build and target platform to ARCH
+BUILDPLATFORM ?= $(ARCH)
+TARGETPLATFORM ?= $(ARCH)
+
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
-# (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
-# More info: https://docs.docker.com/develop/develop-images/build_enhancements/
+# (i.e. make docker-build ARCH=linux/arm64)
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	$(CONTAINER_TOOL) build -t ${IMG} .
+	$(CONTAINER_TOOL) build \
+		--platform $(ARCH) \
+		--build-arg BUILDPLATFORM=$(BUILDPLATFORM) \
+		--build-arg TARGETPLATFORM=$(TARGETPLATFORM) \
+		--build-arg SKIP_TESTS=true \
+		-t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
 
-# PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
-# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
-# - be able to use docker buildx. More info: https://docs.docker.com/build/buildx/
-# - have enabled BuildKit. More info: https://docs.docker.com/develop/develop-images/build_enhancements/
-# - be able to push the image to your registry (i.e. if you do not set a valid value via IMG=<myregistry/image:<tag>> then the export will fail)
-# To adequately provide solutions that are compatible with multiple platforms, you should consider using this option.
-PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+# PLATFORMS can be overridden to build for multiple architectures
+# (i.e. make docker-buildx PLATFORMS="linux/amd64,linux/arm64")
 .PHONY: docker-buildx
 docker-buildx: ## Build and push docker image for the manager for cross-platform support
 	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile

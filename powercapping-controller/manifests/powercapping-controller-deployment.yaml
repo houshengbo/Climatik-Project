@@ -1,0 +1,116 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: powercapping-controller
+  namespace: ${NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: powercapping-controller-role
+rules:
+- apiGroups: ["climatik.io"]
+  resources: ["powercappingpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: powercapping-controller-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: powercapping-controller-role
+subjects:
+- kind: ServiceAccount
+  name: powercapping-controller
+  namespace: ${NAMESPACE}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: powercapping-controller
+  namespace: ${NAMESPACE}
+  labels:
+    app: powercapping-controller
+    control-plane: controller-manager
+spec:
+  selector:
+    matchLabels:
+      app: powercapping-controller
+      control-plane: controller-manager
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: powercapping-controller
+        control-plane: controller-manager
+    spec:
+      serviceAccountName: powercapping-controller
+      containers:
+      - name: manager
+        image: ${IMAGE_REGISTRY}/powercapping-controller:${IMAGE_TAG}
+        imagePullPolicy: Always
+        args:
+        - --leader-elect=true
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
+        - --prometheus-url=${PROMETHEUS_URL}
+        env:
+        - name: MONITOR_INTERVAL
+          value: "${MONITOR_INTERVAL}"
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: powercapping-controller-metrics-service
+  namespace: ${NAMESPACE}
+  labels:
+    app: powercapping-controller
+spec:
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: metrics
+    protocol: TCP
+  - name: health
+    port: 8081
+    targetPort: health
+    protocol: TCP
+  selector:
+    app: powercapping-controller 
