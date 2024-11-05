@@ -1,0 +1,108 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.13.0
+  name: nodefrequencies.freqtuner.climatik.io
+spec:
+  group: freqtuner.climatik.io
+  names:
+    kind: NodeFrequencies
+    listKind: NodeFrequenciesList
+    plural: nodefrequencies
+    shortNames:
+    - nf
+    singular: nodefrequency
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeName
+      name: Node
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: NodeFrequencies is the Schema for the nodefrequencies API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: NodeFrequenciesSpec defines the desired state of NodeFrequencies
+            properties:
+              cpuFrequencies:
+                description: CPUFrequencies is a list of desired CPU frequencies
+                items:
+                  description: CPUFrequencySpec defines the desired frequency for
+                    a CPU core
+                  properties:
+                    coreId:
+                      description: CoreID is the ID of the CPU core
+                      format: int32
+                      minimum: 0
+                      type: integer
+                    frequency:
+                      description: Frequency is the desired frequency in MHz
+                      format: int32
+                      maximum: 5000
+                      minimum: 0
+                      type: integer
+                  required:
+                  - coreId
+                  type: object
+                type: array
+              gpuFrequencies:
+                description: GPUFrequencies is a list of desired GPU frequencies
+                items:
+                  description: GPUFrequencySpec defines the desired frequency for
+                    a GPU
+                  properties:
+                    graphicsFrequency:
+                      description: GraphicsFrequency is the desired graphics clock
+                        frequency in MHz
+                      format: int32
+                      maximum: 2500
+                      minimum: 0
+                      type: integer
+                    memoryFrequency:
+                      description: MemoryFrequency is the desired memory clock frequency
+                        in MHz
+                      format: int32
+                      maximum: 2500
+                      minimum: 0
+                      type: integer
+                    uuid:
+                      description: UUID is the unique identifier of the GPU
+                      type: string
+                  required:
+                  - uuid
+                  type: object
+                type: array
+              nodeName:
+                description: NodeName is the name of the node this CR corresponds
+                  to
+                type: string
+            required:
+            - nodeName
+            type: object
+          status:
+            description: NodeFrequenciesStatus defines the observed state of NodeFrequencies
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - compute.example.com
+  resources:
+  - nodefrequencies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - compute.example.com
+  resources:
+  - nodefrequencies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - compute.example.com
+  resources:
+  - nodefrequencies/status
+  verbs:
+  - get
+  - patch
+  - update
