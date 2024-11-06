@@ -1,5 +1,6 @@
 {
     "go.toolsEnvVars": {
         "GOPATH": "/Users/chenw615/code/Go"
-    }
+    },
+    "makefile.configureOnOpen": false
 }

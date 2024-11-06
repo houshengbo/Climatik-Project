@@ -2,20 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Controller",
+            "name": "Debug FreqTuner Controller",
             "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceFolder}/powercapping-controller/cmd/main.go",
-            "args": [
-                "--metrics-bind-address=:8080",
-                "--health-probe-bind-address=:8081",
-                "--prometheus-url=http://localhost:9090"
-            ],
-            "env": {
-                "KUBECONFIG": "${env:HOME}/.kube/config",
-                "LEVEL": "debug"    // Add this line to enable debug logging
-            }
+            "request": "attach",
+            "mode": "remote",
+            "host": "fmaas2",
+            "port": 2345,
+            "remoteRoot": "${workspaceFolder}",
+            "showLog": true
+        },
+        {
+            "name": "Debug Powercapping Controller",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "host": "fmaas2",
+            "port": 2345,
+            "remoteRoot": "${workspaceFolder}",
+            "showLog": true
         }
-	]
+    ]
 }

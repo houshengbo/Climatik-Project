@@ -83,12 +83,8 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+CONTROLLER_GEN ?= $(shell which controller-gen)
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-
-.PHONY: controller-gen
-controller-gen: $(LOCALBIN) ## Download controller-gen locally if necessary.
-	test -s $(CONTROLLER_GEN) || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.13.0
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
