@@ -51,12 +51,12 @@ kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -
 # Install PowerCapping CRDs
 echo "Installing PowerCapping CRDs..."
 cd "${PROJECT_ROOT}/powercapping-controller"
-make install
+kubectl apply -f config/crd/bases/
 
 # Install FreqTuner CRDs
 echo "Installing FreqTuner CRDs..."
 cd "${PROJECT_ROOT}/freqtuner"
-make install
+kubectl apply -f config/crd/bases/
 
 # Deploy PowerCapping Controller
 echo "Deploying PowerCapping Controller..."
