@@ -2,10 +2,10 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  name: freqtuner-role
 rules:
 - apiGroups:
-  - compute.example.com
+  - freqtuner.climatik.io
   resources:
   - nodefrequencies
   verbs:
@@ -17,13 +17,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - compute.example.com
+  - freqtuner.climatik.io
   resources:
   - nodefrequencies/finalizers
   verbs:
   - update
 - apiGroups:
-  - compute.example.com
+  - freqtuner.climatik.io
   resources:
   - nodefrequencies/status
   verbs:

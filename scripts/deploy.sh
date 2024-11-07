@@ -41,7 +41,7 @@ done
 # Export variables for envsubst
 export NAMESPACE IMAGE_REGISTRY IMAGE_TAG PROMETHEUS_URL MONITOR_INTERVAL
 
-# Get the directory containing the project root (where Makefile is)
+# Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Install CRDs using make from the powercapping-controller directory
@@ -66,5 +66,15 @@ envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/rbac/clusterrolebi
 # Deploy the controller
 echo "Deploying powercapping-controller..."
 envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/powercapping-controller-deployment.yaml" | kubectl apply -f -
+
+
+# Deploy FreqTuner
+echo "Deploying FreqTuner..."
+cd "${PROJECT_ROOT}/freqtuner"
+make install  # Install CRDs
+envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
+envsubst < "config/rbac/role.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
+envsubst < "manifests/freqtuner-daemonset.yaml" | kubectl apply -f -
 
 echo "Deployment complete!" 
