@@ -70,7 +70,7 @@ envsubst < "manifests/powercapping-controller-deployment.yaml" | kubectl apply -
 echo "Deploying FreqTuner..."
 cd "${PROJECT_ROOT}/freqtuner"
 envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
-envsubst < "config/rbac/role.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/role.yaml" | kubectl apply -f -
 envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
 envsubst < "manifests/freqtuner-daemonset.yaml" | kubectl apply -f -
 
