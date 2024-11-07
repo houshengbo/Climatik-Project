@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: freqtuner-controller
+  name: freqtuner
   namespace: ${NAMESPACE}
   labels:
-    app: freqtuner-controller
+    app: freqtuner
 spec:
   selector:
     matchLabels:
-      app: freqtuner-controller
+      app: freqtuner
   template:
     metadata:
       labels:
-        app: freqtuner-controller
+        app: freqtuner
     spec:
-      serviceAccountName: freqtuner-controller
+      serviceAccountName: freqtuner
       containers:
       - name: manager
         image: ${IMAGE_REGISTRY}/freqtuner:${IMAGE_TAG}
@@ -26,8 +26,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: DEBUG
-          value: "true"
         volumeMounts:
         - name: cpu-freq
           mountPath: /sys/devices/system/cpu

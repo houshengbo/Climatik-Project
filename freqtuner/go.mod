@@ -8,10 +8,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.16.0
 )
 
-require (
-	github.com/NVIDIA/go-nvml v0.12.4-0
-	k8s.io/api v0.28.0
-)
+require github.com/NVIDIA/go-nvml v0.12.4-0
 
 // Pin all kubernetes-related packages to v0.28.0
 replace (
@@ -73,6 +70,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	k8s.io/api v0.28.0 // indirect
 	k8s.io/apiextensions-apiserver v0.28.0 // indirect
 	k8s.io/component-base v0.28.0 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect

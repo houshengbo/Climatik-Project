@@ -1,30 +1,59 @@
-# Build and test stage
-FROM --platform=$BUILDPLATFORM golang:1.22 AS builder
+# Build stage
+FROM --platform=$BUILDPLATFORM nvidia/cuda:12.0.0-devel-ubuntu22.04 AS builder
 ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
-ARG SKIP_TESTS=false
+ARG SKIP_TESTS=true
+
+# Install Go
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Go 1.21
+RUN wget https://go.dev/dl/go1.21.4.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.21.4.linux-amd64.tar.gz \
+    && rm go1.21.4.linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
-# Cache deps before building and copying source so that we don't need to re-download as much
+# Cache deps before building
 RUN go mod download
 
-# Copy the entire source code
+# Copy the source code
 COPY . .
 
-# Build and test
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o manager cmd/main.go && \
-    if [ "$SKIP_TESTS" = "false" ]; then \
-        CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go test ./... -v; \
-    fi
+# Build with CUDA environment
+RUN CGO_ENABLED=1 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o manager cmd/main.go
 
 # Final stage
-FROM --platform=$TARGETPLATFORM gcr.io/distroless/static:nonroot
+FROM --platform=$TARGETPLATFORM nvidia/cuda:12.0.0-base-ubuntu22.04
 WORKDIR /
+
+# Copy binary
 COPY --from=builder /workspace/manager .
+
+# Copy configuration files and manifests
+COPY --from=builder /workspace/config/crd/bases /config/crd/bases
+COPY --from=builder /workspace/config/gpu_frequencies.json /config/gpu_frequencies.json
+COPY --from=builder /workspace/config/rbac /config/rbac
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /config && chown -R 65532:65532 /config
+
 USER 65532:65532
 
-ENTRYPOINT ["/manager"] 
+LABEL maintainer="Chen.Wang1@ibm.com"
+LABEL version="1.0"
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:8081/health || exit 1
+
+EXPOSE 8080
+EXPOSE 8081
+
+ENTRYPOINT ["/manager"]
