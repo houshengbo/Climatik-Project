@@ -8,7 +8,11 @@
             "mode": "remote",
             "host": "fmaas2",
             "port": 2345,
-            "remoteRoot": "${workspaceFolder}",
+            "env": {
+                "NAMESPACE": "climatik-project",
+                "KUBECONFIG": "/root/.kube/config"
+            },
+            "remoteRoot": "/root/go/src/github.com/Climatik-Project/Climatik-Project/freqtuner",
             "showLog": true
         },
         {
@@ -18,7 +22,7 @@
             "mode": "remote",
             "host": "fmaas2",
             "port": 2345,
-            "remoteRoot": "${workspaceFolder}",
+            "remoteRoot": "/root/go/src/github.com/Climatik-Project/Climatik-Project/powercapping-controller",
             "showLog": true
         }
     ]

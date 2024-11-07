@@ -1,5 +1,8 @@
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+# Docker image variables
+DOCKER_REGISTRY ?= quay.io/climatik-project
+IMAGE_NAME ?= freqtuner
+IMAGE_TAG ?= latest
+IMG ?= $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.28.0
@@ -15,6 +18,15 @@ endif
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
+# Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+# Tool Binaries
+CONTROLLER_GEN ?= $(shell which controller-gen)
+ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 .PHONY: all
 all: build
@@ -32,11 +44,19 @@ all: build
 # More info on the awk command:
 # http://linuxcommand.org/lc3_adv_awk.php
 
+##@ Help
 .PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-##@ Development
+##@ Development    # Creates a "Development" section header
+.PHONY: fmt
+fmt: ## Auto-format Go code
+	go fmt ./...
+
+.PHONY: controller-gen
+controller-gen: ## Download controller-gen if necessary
+	(which controller-gen > /dev/null) || go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.13.0
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
@@ -53,10 +73,6 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 		object:headerFile="hack/boilerplate.go.txt" \
 		paths="./api/..."
 
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
@@ -66,7 +82,6 @@ test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
-
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager cmd/main.go
@@ -76,15 +91,6 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 ##@ Build Dependencies
-
-## Location to install dependencies to
-LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
-
-## Tool Binaries
-CONTROLLER_GEN ?= $(shell which controller-gen)
-ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
@@ -109,7 +115,7 @@ uninstall: manifests ## Uninstall CRDs from the K8s cluster
 	kubectl delete -f config/crd/bases
 
 .PHONY: deploy
-deploy: manifests ## Deploy controller to the K8s cluster
+deploy: manifests docker-build docker-push ## Deploy controller to the K8s cluster
 	kubectl apply -f config/rbac
 	kubectl apply -f config/manager
 
@@ -117,3 +123,12 @@ deploy: manifests ## Deploy controller to the K8s cluster
 undeploy: ## Undeploy controller from the K8s cluster
 	kubectl delete -f config/manager
 	kubectl delete -f config/rbac
+
+# Add these under the Build section
+.PHONY: docker-build
+docker-build: ## Build docker image with the manager.
+	docker build -t ${IMG} .
+
+.PHONY: docker-push
+docker-push: ## Push docker image with the manager.
+	docker push ${IMG}

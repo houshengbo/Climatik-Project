@@ -26,7 +26,14 @@ type NodeFrequenciesSpec struct {
 // NodeFrequenciesStatus defines the observed state of NodeFrequencies
 // +k8s:deepcopy-gen=true
 type NodeFrequenciesStatus struct {
-	// Add status fields if needed
+	// NodeName is the name of the node this CR corresponds to
+	NodeName string `json:"nodeName"`
+
+	// GPUFrequencies is a list of observed GPU frequencies
+	GPUFrequencies []GPUFrequencySpec `json:"gpuFrequencies,omitempty"`
+
+	// CPUFrequencies is a list of observed CPU frequencies
+	CPUFrequencies []CPUFrequencySpec `json:"cpuFrequencies,omitempty"`
 }
 
 // GPUFrequencySpec defines the desired frequency for a GPU

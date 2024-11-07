@@ -100,6 +100,61 @@ spec:
             type: object
           status:
             description: NodeFrequenciesStatus defines the observed state of NodeFrequencies
+            properties:
+              cpuFrequencies:
+                description: CPUFrequencies is a list of observed CPU frequencies
+                items:
+                  description: CPUFrequencySpec defines the desired frequency for
+                    a CPU core
+                  properties:
+                    coreId:
+                      description: CoreID is the ID of the CPU core
+                      format: int32
+                      minimum: 0
+                      type: integer
+                    frequency:
+                      description: Frequency is the desired frequency in MHz
+                      format: int32
+                      maximum: 5000
+                      minimum: 0
+                      type: integer
+                  required:
+                  - coreId
+                  type: object
+                type: array
+              gpuFrequencies:
+                description: GPUFrequencies is a list of observed GPU frequencies
+                items:
+                  description: GPUFrequencySpec defines the desired frequency for
+                    a GPU
+                  properties:
+                    graphicsFrequency:
+                      description: GraphicsFrequency is the desired graphics clock
+                        frequency in MHz
+                      format: int32
+                      maximum: 2500
+                      minimum: 0
+                      type: integer
+                    memoryFrequency:
+                      description: MemoryFrequency is the desired memory clock frequency
+                        in MHz
+                      format: int32
+                      maximum: 2500
+                      minimum: 0
+                      type: integer
+                    uuid:
+                      description: UUID is the unique identifier of the GPU
+                      type: string
+                  required:
+                  - uuid
+                  type: object
+                type: array
+              nodeName:
+                description: NodeName is the name of the node this CR corresponds
+                  to
+                type: string
+            required:
+            - nodeName
             type: object
         type: object
     served: true

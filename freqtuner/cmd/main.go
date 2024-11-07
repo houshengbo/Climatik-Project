@@ -13,6 +13,7 @@ import (
 
 	freqtunerv1alpha1 "github.com/Climatik-Project/Climatik-Project/freqtuner/api/v1alpha1"
 	"github.com/Climatik-Project/Climatik-Project/freqtuner/controllers"
+	"github.com/Climatik-Project/Climatik-Project/freqtuner/pkg/constants"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -49,11 +50,28 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = constants.DefaultNamespace
+	}
+
 	nodeName, err := os.Hostname()
 	if err != nil {
 		setupLog.Error(err, "failed to get hostname")
 		os.Exit(1)
 	}
+
+	cfg, err := ctrl.GetConfig()
+	if err != nil {
+		setupLog.Error(err, "unable to get kubeconfig")
+		os.Exit(1)
+	}
+
+	// Optional: Print the config being used
+	setupLog.Info("Using kubeconfig",
+		"host", cfg.Host,
+		"username", cfg.Username,
+		"clientCert", cfg.CertFile != "")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -68,9 +86,10 @@ func main() {
 	}
 
 	reconciler := &controllers.NodeFrequenciesReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		NodeName: nodeName,
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		NodeName:  nodeName,
+		Namespace: namespace,
 	}
 
 	if err = reconciler.SetupWithManager(mgr); err != nil {
@@ -86,9 +105,22 @@ func main() {
 			setupLog.Error(nil, "failed to wait for caches to sync")
 			return
 		}
-		setupLog.Info("Cache synced, initializing NodeFrequencies CR")
-		if err := reconciler.InitializeNodeFrequenciesCRs(ctx); err != nil {
-			setupLog.Error(err, "failed to initialize NodeFrequencies CR")
+
+		setupLog.Info("Cache synced, checking for existing NodeFrequencies CR")
+		exists, err := reconciler.NodeFrequenciesCRExists(ctx)
+		if err != nil {
+			setupLog.Error(err, "failed to check for existing NodeFrequencies CR")
+			return
+		}
+
+		if !exists {
+			setupLog.Info("Initializing NodeFrequencies CR")
+			if err := reconciler.InitializeNodeFrequenciesCRs(ctx); err != nil {
+				setupLog.Error(err, "failed to initialize NodeFrequencies CR")
+				return
+			}
+		} else {
+			setupLog.Info("NodeFrequencies CR already exists, skipping initialization")
 		}
 	}()
 

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: freqtuner-controller
+  namespace: ${NAMESPACE}
+  labels:
+    app: freqtuner-controller
+spec:
+  selector:
+    matchLabels:
+      app: freqtuner-controller
+  template:
+    metadata:
+      labels:
+        app: freqtuner-controller
+    spec:
+      serviceAccountName: freqtuner-controller
+      containers:
+      - name: manager
+        image: ${IMAGE_REGISTRY}/freqtuner:${IMAGE_TAG}
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true  # Needed for CPU frequency control
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DEBUG
+          value: "true"
+        volumeMounts:
+        - name: cpu-freq
+          mountPath: /sys/devices/system/cpu
+        - name: nvidia-bindings
+          mountPath: /usr/local/nvidia
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: cpu-freq
+        hostPath:
+          path: /sys/devices/system/cpu
+      - name: nvidia-bindings
+        hostPath:
+          path: /usr/local/nvidia
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
