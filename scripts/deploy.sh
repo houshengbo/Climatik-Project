@@ -44,34 +44,31 @@ export NAMESPACE IMAGE_REGISTRY IMAGE_TAG PROMETHEUS_URL MONITOR_INTERVAL
 # Get the project root directory
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Install CRDs using make from the powercapping-controller directory
-echo "Installing powercapping CRDs..."
-cd "${PROJECT_ROOT}/powercapping-controller"
-# Then install them
-make install
-
-# Return to original directory (good practice)
-cd - > /dev/null
-
 # Create namespace if it doesn't exist
 echo "Creating namespace ${NAMESPACE} if it doesn't exist..."
 kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
 
-# Apply RBAC
-echo "Applying RBAC..."
-envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
-envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/rbac/clusterrole.yaml" | kubectl apply -f -
-envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
+# Install PowerCapping CRDs
+echo "Installing PowerCapping CRDs..."
+cd "${PROJECT_ROOT}/powercapping-controller"
+make install
 
-# Deploy the controller
-echo "Deploying powercapping-controller..."
-envsubst < "${PROJECT_ROOT}/powercapping-controller/manifests/powercapping-controller-deployment.yaml" | kubectl apply -f -
+# Install FreqTuner CRDs
+echo "Installing FreqTuner CRDs..."
+cd "${PROJECT_ROOT}/freqtuner"
+make install
 
+# Deploy PowerCapping Controller
+echo "Deploying PowerCapping Controller..."
+cd "${PROJECT_ROOT}/powercapping-controller"
+envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/clusterrole.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
+envsubst < "manifests/powercapping-controller-deployment.yaml" | kubectl apply -f -
 
 # Deploy FreqTuner
 echo "Deploying FreqTuner..."
 cd "${PROJECT_ROOT}/freqtuner"
-make install  # Install CRDs
 envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
 envsubst < "config/rbac/role.yaml" | kubectl apply -f -
 envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
