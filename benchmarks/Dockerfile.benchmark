@@ -1,0 +1,20 @@
+# Use Python base image
+FROM python:3.9-slim
+
+# Install required system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only the necessary files from your local vLLM repository
+WORKDIR /vllm
+COPY . .
+
+# Install packages from requirements-test.txt
+RUN pip install -r requirements-test.txt
+
+# Make the benchmark script the entrypoint
+ENTRYPOINT ["python3", "benchmarks/benchmark_serving.py"]
+
+# Default arguments that can be overridden
+CMD ["--help"]

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vllm-benchmark-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: vllm-benchmark
+        image: quay.io/climatik-project/vllm-benchmark:latest
+        args: [
+          "--backend", "vllm",
+          "--host", "vllm-opt-125m",
+          "--port", "8000",
+          "--model", "facebook/opt-125m",
+          "--dataset-name", "random",
+          "--request-rate", "100",
+          "--num-prompts", "1000",
+          "--max-concurrency", "50",
+          "--random-input-len", "512",
+          "--random-output-len", "128",
+          "--save-result",
+          "--result-dir", "/results",
+          "--result-filename", "benchmark_results.json"
+        ]
+        volumeMounts:
+        - name: results-volume
+          mountPath: /results
+      volumes:
+      - name: results-volume
+        persistentVolumeClaim:
+          claimName: benchmark-results-pvc
+      restartPolicy: Never

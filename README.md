@@ -170,28 +170,31 @@ Follow these steps to deploy the VLLM server with the `facebook/opt-125m` model 
    kubectl create secret generic huggingface-secret --from-literal=HF_TOKEN='<hg_token>'
    ```
 
-2. **Set Up Persistent Volume, Persistent Volume Claim, and Deploy the VLLM Server**
+2. **Prepare the Environment**
 
-   First, create a local folder on your host machine to cache Hugging Face models:
-
+   Create and set permissions for the cache directory:
    ```sh
-   mkdir -p /data/huggingface-cache
+   sudo mkdir -p /data/huggingface-cache
+   sudo chmod 777 /data/huggingface-cache
    ```
 
-   Then, apply the following YAML configuration to set up the persistent volume, persistent volume claim, and deploy the VLLM server with the `facebook/opt-125m` model:
+3. **Load the VLLM Image into Kind Cluster**
+
+   ```sh
+   # Pull the image locally
+   docker pull vllm/vllm-openai:latest
+   
+   # Load the image into kind cluster
+   kind load docker-image vllm/vllm-openai:latest
+   ```
+
+4. **Deploy the VLLM Server**
 
    ```sh
    kubectl apply -f manifests/vllm-deployment.yaml
    ```
 
-   This configuration will:
-   - Create a persistent volume and claim for caching Hugging Face models
-   - Deploy the VLLM server using the `vllm/vllm-openai:latest` image
-   - Configure the server to use the `facebook/opt-125m` model
-
-3. **Verify the Deployment**
-
-   Check the status of the deployment to ensure that the VLLM server is running correctly:
+5. **Verify the Deployment**
 
    ```sh
    kubectl get pods -l app=vllm-opt-125m
