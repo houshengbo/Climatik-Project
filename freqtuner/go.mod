@@ -10,6 +10,8 @@ require (
 
 require github.com/NVIDIA/go-nvml v0.12.4-0
 
+replace github.com/NVIDIA/go-nvml => github.com/Climatik-Project/go-nvml v0.0.0-20241107155317-5bb638e32426
+
 // Pin all kubernetes-related packages to v0.28.0
 replace (
 	k8s.io/api => k8s.io/api v0.28.0

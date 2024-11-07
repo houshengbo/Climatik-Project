@@ -706,12 +706,29 @@ func (r *NodeFrequenciesReconciler) initializeFrequencyCaches() error {
 
 			if config, exists := configs[name]; exists {
 				r.gpuFreqCache[uuid] = config.SupportedFrequencies
-				ctrl.Log.Info("Cached GPU frequencies",
-					"UUID", uuid,
-					"Model", name,
-					"FrequencyCount", len(r.gpuFreqCache[uuid]),
-					"SupportedFrequencies", r.gpuFreqCache[uuid])
+			} else {
+				_, memClocks, ret := device.GetSupportedMemoryClocks()
+				if ret == nvml.SUCCESS {
+					memClock := memClocks[0]
+
+					// Get supported graphics clocks for this memory clock
+					graphicsCount, graphicsClocks, ret := device.GetSupportedGraphicsClocks(int(memClock))
+					if ret == nvml.SUCCESS {
+						r.gpuFreqCache[uuid] = make([]uint32, graphicsCount)
+						ctrl.Log.Info("GPU frequencies available:", "UUID", uuid, "count", graphicsCount)
+						for i, graphicsClock := range graphicsClocks {
+							fmt.Printf("  %d MHz\n", graphicsClock)
+							r.gpuFreqCache[uuid][i] = graphicsClock
+						}
+					}
+				}
 			}
+			ctrl.Log.Info("Available GPU frequencies",
+				"UUID", uuid,
+				"Model", name,
+				"FrequencyCount", len(r.gpuFreqCache[uuid]),
+				"SupportedFrequencies", r.gpuFreqCache[uuid])
+
 		}
 	}
 
