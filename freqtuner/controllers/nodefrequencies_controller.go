@@ -259,8 +259,8 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 		// If graphics frequency needs updating
 		if gpuSpec.GraphicsFrequency > 0 && uint32(currentGraphicsFreq) != uint32(gpuSpec.GraphicsFrequency) {
 			// Log initial state
-			currentSMClock, ret := device.GetClockInfo(nvml.CLOCK_SM)
-			currentMemClock, ret := device.GetClockInfo(nvml.CLOCK_MEM)
+			currentSMClock, _ := device.GetClockInfo(nvml.CLOCK_SM)
+			currentMemClock, _ := device.GetClockInfo(nvml.CLOCK_MEM)
 
 			log.Info("Current GPU state",
 				"UUID", gpuSpec.UUID,

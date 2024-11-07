@@ -16,13 +16,16 @@ spec:
     spec:
       serviceAccountName: freqtuner
       nodeSelector:
-        nvidia.com/gpu: "present"
+        nvidia.com/gpu: "true"
       containers:
       - name: manager
         image: ${IMAGE_REGISTRY}/freqtuner:${IMAGE_TAG}
         imagePullPolicy: Always
+        args:
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
         securityContext:
-          privileged: true  # Needed for CPU frequency control
+          privileged: true
         env:
         - name: NAMESPACE
           valueFrom:
@@ -67,6 +70,4 @@ spec:
         hostPath:
           path: /usr/local/nvidia
       tolerations:
-      - key: "node-role.kubernetes.io/master"
-        operator: "Exists"
-        effect: "NoSchedule"
+      - operator: "Exists"

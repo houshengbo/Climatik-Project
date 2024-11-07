@@ -40,7 +40,6 @@ COPY --from=builder /workspace/manager .
 # Copy configuration files and manifests
 COPY --from=builder /workspace/config/crd/bases /config/crd/bases
 COPY --from=builder /workspace/config/gpu_frequencies.json /config/gpu_frequencies.json
-COPY --from=builder /workspace/config/rbac /config/rbac
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /config && chown -R 65532:65532 /config
@@ -49,9 +48,6 @@ USER 65532:65532
 
 LABEL maintainer="Chen.Wang1@ibm.com"
 LABEL version="1.0"
-
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:8081/health || exit 1
 
 EXPOSE 8080
 EXPOSE 8081
