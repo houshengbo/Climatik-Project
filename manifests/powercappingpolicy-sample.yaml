@@ -3,10 +3,10 @@ kind: PowerCappingPolicy
 metadata:
   name: llm-inference-power-cap
 spec:
-  powerCapLimit: 100  # Power cap limit in watts
+  powerCapLimit: 1000  # Power cap limit in watts
   selector:
     matchLabels:
-      app: vllm-llama-7b
+      app: vllm-opt-125m
   cappingThreshold: 90  # Trigger capping when 90% of the limit is reached
   customAlgorithms:
     - name: dynamic-frequency-scaler

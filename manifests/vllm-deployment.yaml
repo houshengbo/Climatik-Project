@@ -26,25 +26,25 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vllm-llama-7b
+  name: vllm-opt-125m
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vllm-llama-7b
+      app: vllm-opt-125m
   template:
     metadata:
       labels:
-        app: vllm-llama-7b
+        app: vllm-opt-125m
     spec:
       containers:
-      - name: vllm-container-llama-7b
+      - name: vllm-container-opt-125m
         image: vllm/vllm-openai:latest
         command: ["/bin/sh", "-c"]
         args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"]
         ports:
         - containerPort: 8000
-          name: llama-7b
+          name: opt-125m
         env:
         - name: HUGGING_FACE_HUB_TOKEN
           valueFrom:
@@ -52,7 +52,7 @@ spec:
               key: HF_TOKEN
               name: huggingface-secret
         - name: MODEL_NAME
-          value: "meta-llama/Llama-2-7b-chat-hf"
+          value: "facebook/opt-125m"
         volumeMounts:
         - name: cache-volume
           mountPath: /root/.cache/huggingface
@@ -72,15 +72,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: vllm-llama-7b
-    model_family: meta-llama
-    model_name: Llama-2-7B-chat-hf
-  name: vllm-llama-7b
+    app: vllm-opt-125m
+    model_family: facebook
+    model_name: opt-125m
+  name: vllm-opt-125m
   namespace: default
 spec:
   ports:
   - port: 8000
-    targetPort: llama-7b
-    name: llama-7b
+    targetPort: opt-125m
+    name: opt-125m
   selector:
-    app: vllm-llama-7b
+    app: vllm-opt-125m

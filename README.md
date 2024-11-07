@@ -158,7 +158,58 @@ For more detailed troubleshooting steps, please refer to our [troubleshooting gu
 
 ## 6. Usage
 
-[... usage section ...]
+### Deploying the VLLM Deployment with OPT-125M Model
+
+Follow these steps to deploy the VLLM server with the `facebook/opt-125m` model on your Kubernetes cluster:
+
+1. **Create the Hugging Face Token Secret**
+
+   First, create a Kubernetes secret to store your Hugging Face token. Replace `<hg_token>` with your actual Hugging Face token:
+
+   ```sh
+   kubectl create secret generic huggingface-secret --from-literal=HF_TOKEN='<hg_token>'
+   ```
+
+2. **Set Up Persistent Volume, Persistent Volume Claim, and Deploy the VLLM Server**
+
+   First, create a local folder on your host machine to cache Hugging Face models:
+
+   ```sh
+   mkdir -p /data/huggingface-cache
+   ```
+
+   Then, apply the following YAML configuration to set up the persistent volume, persistent volume claim, and deploy the VLLM server with the `facebook/opt-125m` model:
+
+   ```sh
+   kubectl apply -f manifests/vllm-deployment.yaml
+   ```
+
+   This configuration will:
+   - Create a persistent volume and claim for caching Hugging Face models
+   - Deploy the VLLM server using the `vllm/vllm-openai:latest` image
+   - Configure the server to use the `facebook/opt-125m` model
+
+3. **Verify the Deployment**
+
+   Check the status of the deployment to ensure that the VLLM server is running correctly:
+
+   ```sh
+   kubectl get pods -l app=vllm-opt-125m
+   ```
+
+   You should see a pod running with the name `vllm-opt-125m`.
+
+4. **Access the VLLM Server**
+
+   Once the pod is running, you can access the VLLM server using the service created in the deployment:
+
+   ```sh
+   kubectl get svc vllm-opt-125m
+   ```
+
+   This will provide you with the service's external IP and port, which you can use to interact with the VLLM server.
+
+By following these steps, you will have successfully deployed the VLLM server with the `facebook/opt-125m` model on your Kubernetes cluster, utilizing persistent volumes for efficient model caching.
 
 ## 7. Documentation
 
