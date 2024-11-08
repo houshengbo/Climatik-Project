@@ -4,32 +4,9 @@
 
 To run a load testing benchmark job for vLLM, follow these steps:
 
-### 1. Set Up Storage
+### 1. Create and Run Benchmark Job
 
-First, create a PersistentVolumeClaim to store benchmark results:
-
-Create `benchmark-storage.yaml`:
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vllm-benchmark-results
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-```
-
-Apply the storage configuration:
-```bash
-kubectl apply -f benchmark-storage.yaml
-```
-
-### 2. Create and Run Benchmark Job
-
-Create `benchmark-job.yaml`:
+Create `vllm-benchmarking-job.yaml`:
 ```yaml
 apiVersion: batch/v1
 kind: Job
@@ -41,35 +18,24 @@ spec:
       containers:
       - name: vllm-benchmark
         image: quay.io/climatik-project/vllm-benchmark:latest
-        args: [
-          "--backend", "vllm",
-          "--host", "vllm-opt-125m",
-          "--port", "8000",
-          "--model", "facebook/opt-125m",
-          "--dataset-name", "random",
-          "--request-rate", "100",
-          "--num-prompts", "1000",
-          "--max-concurrency", "50",
-          "--random-input-len", "512",
-          "--random-output-len", "128",
-          "--save-result",
-          "--result-dir", "/results",
-          "--result-filename", "benchmark_results.json"
-        ]
+        command: ["/bin/sh"]
+        args:
+        - "-c"
+        - "python3 benchmarks/benchmark_serving.py --backend vllm --host vllm-opt-125m --port 8000 --model facebook/opt-125m --dataset-name random --request-rate 100 --num-prompts 1000 --max-concurrency 50 --random-input-len 512 --random-output-len 128 --save-result --result-dir /results --result-filename benchmark_results.json"
         volumeMounts:
         - name: benchmark-results
           mountPath: /results
       volumes:
       - name: benchmark-results
-        persistentVolumeClaim:
-          claimName: vllm-benchmark-results
+        hostPath:
+          path: /data/results
+          type: Directory
       restartPolicy: Never
-  backoffLimit: 4
 ```
 
 Run the benchmark job:
 ```bash
-kubectl apply -f benchmark-job.yaml
+kubectl apply -f vllm-benchmarking-job.yaml
 ```
 
 Monitor job progress:
@@ -79,13 +45,7 @@ kubectl logs -l job-name=vllm-benchmark-job
 ```
 
 Access results:
-```bash
-# Get the pod name
-POD_NAME=$(kubectl get pods -l job-name=vllm-benchmark-job -o jsonpath='{.items[0].metadata.name}')
-
-# Copy results locally
-kubectl cp $POD_NAME:/results/benchmark_results.json ./benchmark_results.json
-```
+The benchmark results will be available in the `/data/results` directory on the host machine.
 
 ## Optional: Building Custom Benchmark Image
 

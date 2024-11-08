@@ -40,6 +40,7 @@ spec:
       containers:
       - name: vllm-container-opt-125m
         image: vllm/vllm-openai:latest
+        imagePullPolicy: IfNotPresent
         command: ["/bin/sh", "-c"]
         args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"]
         ports:
