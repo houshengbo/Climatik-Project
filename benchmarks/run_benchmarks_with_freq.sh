@@ -26,7 +26,7 @@ fi
 source "$VENV_DIR/bin/activate"
 
 # Install requirements
-pip install -r "$SCRIPT_DIR/requirements.txt"
+pip install -r "$SCRIPT_DIR/data-process-scripts/requirements.txt"
 
 # Function to calculate statistics from benchmark results
 process_benchmark_results() {
@@ -43,25 +43,17 @@ process_benchmark_results() {
 MEM_CLOCK=${MEM_CLOCK:-"877"}
 MAX_CLOCK=${MAX_CLOCK:-"1380"}
 
-# Define the SM clock frequencies to test (in MHz)
-FREQUENCIES=(
-    1380  # Max clock
-    1305
-    1230
-    1155
-    1080
-    1005
-    930
-    855
-    780
-    705
-    630
-    555
-    480
-    405
-    330
-    300   # Min clock (>=300MHz)
-)
+# Get supported clock frequencies dynamically
+FREQUENCIES=($(nvidia-smi -q -d SUPPORTED_CLOCKS | grep "Graphics" | sed 's/.*: //; s/\s\+/ /g; s/MHz//g' | tr ' ' '\n' | sort -nr | uniq))
+
+# If no frequencies found, exit with error
+if [ ${#FREQUENCIES[@]} -eq 0 ]; then
+    echo "Error: Could not get supported GPU frequencies"
+    exit 1
+fi
+
+echo "Testing the following frequencies (MHz):"
+printf '%s\n' "${FREQUENCIES[@]}"
 
 for freq in "${FREQUENCIES[@]}"; do
     echo "Testing frequency: ${freq}MHz"
