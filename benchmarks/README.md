@@ -47,46 +47,6 @@ kubectl logs -l job-name=vllm-benchmark-job
 Access results:
 The benchmark results will be available in the `/data/results` directory on the host machine.
 
-## Optional: Building Custom Benchmark Image
-
-If you need to build a custom benchmark image (e.g., for deployment to specific registries), follow these steps:
-
-1. From vLLM root directory, build the image:
-```bash
-# Using Docker
-docker build --platform linux/amd64 -f Dockerfile.benchmark -t quay.io/climatik-project/vllm-benchmark:latest .
-
-# Using Podman
-podman build --platform linux/amd64 -f Dockerfile.benchmark -t quay.io/climatik-project/vllm-benchmark:latest .
-```
-
-2. Push to registry (optional):
-```bash
-# First login
-podman login quay.io
-
-# Then push
-podman push quay.io/climatik-project/vllm-benchmark:latest
-```
-
-The image includes Python 3.9-slim, essential build tools, and vLLM testing requirements, using `benchmarks/benchmark_serving.py` as its entrypoint.
-
-## Common Benchmark Parameters
-
-The benchmark script supports several parameters:
-- `--model`: HuggingFace model ID or local path
-- `--tokenizer`: Tokenizer to use (defaults to model ID)
-- `--test-throughput`: Enable throughput testing
-- `--num-prompts`: Number of prompts to test (default: 1000)
-- `--output-file`: Path to save results
-- `--max-tokens`: Maximum number of tokens to generate (default: 100)
-- `--tensor-parallel-size`: Number of GPUs for tensor parallelism
-
-For a complete list of parameters:
-```bash
-kubectl run --rm -i --tty benchmark-help --image=quay.io/climatik-project/vllm-benchmark:latest -- --help
-```
-
 ## Power Profiling with GPU Frequency Tuning
 
 To analyze the relationship between GPU clock frequency and power consumption during benchmarking, you can use the provided frequency tuning script.
