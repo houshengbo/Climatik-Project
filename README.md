@@ -224,6 +224,8 @@ For a detailed description of the system architecture, including component inter
 - The overall system workflow
 - Key benefits of the architecture
 
+For information about running benchmarks and performance testing, please refer to our [benchmarking guide](benchmarks/README.md).
+
 The design document offers a comprehensive overview of how the PowerCapping Controller works in conjunction with other components to achieve efficient power management for LLM inference workloads.
 
 ## 8. Contributing

@@ -114,17 +114,29 @@ This script:
 ### 3. Understanding the Results
 
 Results are stored in `/data/results/` with several files:
-- `power_summary.csv`: Overview of power statistics for each frequency
-- `power_${freq}mhz_${timestamp}.log`: Detailed logs for each frequency run
-- `power_${freq}mhz_${timestamp}_raw_power.csv`: Raw power measurements
 
-Example power summary format:
-```csv
-frequency,average_power,std_dev,p95_power,p99_power
-540,125.45,10.23,140.32,145.67
-810,145.78,12.45,160.23,165.89
-1110,180.34,15.67,
-```
+#### Summary Files
+- `power_summary.csv`: Overview of power statistics for each frequency
+  ```csv
+  frequency,average_power,std_dev,p95_power,p99_power
+  ```
+
+- `performance_summary.csv`: Performance metrics for each frequency
+  ```csv
+  frequency,mean_ttft_ms,median_ttft_ms,std_ttft_ms,p99_ttft_ms,mean_tpot_ms,median_tpot_ms,std_tpot_ms,p99_tpot_ms,mean_itl_ms,median_itl_ms,std_itl_ms,p99_itl_ms,request_throughput,output_throughput,total_token_throughput
+  ```
+
+#### Raw Data Files
+- `power_${freq}mhz_${timestamp}_raw_power.csv`: Raw power measurements for each frequency run
+  ```csv
+  timestamp,power.draw
+  ```
+
+- `benchmark_results_${freq}mhz.json`: Detailed benchmark results for each frequency setting
+
+The script tests frequencies ranging from 300MHz to 1380MHz, collecting both power consumption and performance metrics at each level. Each run generates its own set of raw data files with timestamps for tracking and analysis.
+
+Note: The actual frequency steps tested are: 1380, 1305, 1230, 1155, 1080, 1005, 930, 855, 780, 705, 630, 555, 480, 405, 330, and 300 MHz.
 
 ### 4. Cleanup
 
@@ -138,9 +150,6 @@ Note: This script requires:
 - Administrative access to modify GPU settings
 - Kubernetes cluster access
 - Sufficient storage space for result collection
-
-[Next tutorial section would continue here...] 
-[Other tutorial sections would go here...]
 
 ## Optional: Building Custom Benchmark Image
 
@@ -165,6 +174,5 @@ podman push quay.io/climatik-project/vllm-benchmark:latest
 ```
 
 The image includes Python 3.9-slim, essential build tools, and vLLM testing requirements, using `benchmarks/benchmark_serving.py` as its entrypoint.
-
-[Next tutorial section would continue here...] 
+ 
  
