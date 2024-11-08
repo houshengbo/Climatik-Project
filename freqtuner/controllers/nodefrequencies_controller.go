@@ -46,9 +46,9 @@ type NodeFrequenciesReconciler struct {
 	cacheMutex      sync.RWMutex
 }
 
-//+kubebuilder:rbac:groups=compute.example.com,resources=nodefrequencies,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=compute.example.com,resources=nodefrequencies/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=compute.example.com,resources=nodefrequencies/finalizers,verbs=update
+//+kubebuilder:rbac:groups=climatik.io,resources=nodefrequencies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=climatik.io,resources=nodefrequencies/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=climatik.io,resources=nodefrequencies/finalizers,verbs=update
 
 // getGPUByUUID returns the NVIDIA device handle for a given UUID
 func getGPUByUUID(uuid string) (nvml.Device, error) {

@@ -1,4 +1,4 @@
-// +groupName=freqtuner.climatik.io
+// +groupName=climatik.io
 
 package v1alpha1
 

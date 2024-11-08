@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freqtuning-recommender
+  namespace: climatik-project
+spec:
+  selector:
+    matchLabels:
+      app: freqtuning-recommender
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: freqtuning-recommender
+    spec:
+      containers:
+      - name: manager
+        image: quay.io/climatik/freqtuning-recommender:latest
+        args:
+        - --leader-elect
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+      serviceAccountName: freqtuning-recommender-controller-manager 
