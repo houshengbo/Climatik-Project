@@ -1,6 +1,7 @@
 import sys
 import json
 import numpy as np
+import os
 
 def calculate_stats(data):
     """Calculate statistical metrics for a data series.
@@ -17,6 +18,20 @@ def calculate_stats(data):
     p99 = np.percentile(data, 99)
     return mean, median, std, p99
 
+def extract_metrics(data):
+    """Extract throughput and latency metrics from benchmark results.
+    
+    Args:
+        data (dict): Benchmark results JSON data
+    
+    Returns:
+        dict: Dictionary containing performance metrics
+    """
+    return {
+        key: value for key, value in data.items() 
+        if 'throughput' in key or key.endswith('ms')
+    }
+
 def process_benchmark_results(result_file, perf_summary, freq):
     """Process benchmark results and append summary statistics to the summary file."""
     # Load benchmark results
@@ -24,22 +39,20 @@ def process_benchmark_results(result_file, perf_summary, freq):
         data = json.load(f)
     
     # Extract available metrics
-    request_throughput = data['request_throughput']
-    output_throughput = data['output_throughput']
-    total_token_throughput = data['total_token_throughput']
+    metrics = extract_metrics(data)
     
-    # Calculate statistics for input lengths
-    input_len_stats = calculate_stats(data['input_lens'])
+    # Check if file exists and is empty
+    is_new_file = not os.path.exists(perf_summary) or os.path.getsize(perf_summary) == 0
     
-    # Write to performance summary
     with open(perf_summary, 'a') as f:
-        # Write input length statistics
-        f.write(f'{freq},{input_len_stats[0]:.2f},{input_len_stats[1]:.2f},')
-        f.write(f'{input_len_stats[2]:.2f},{input_len_stats[3]:.2f},')
+        # Write headers if file is new/empty
+        if is_new_file:
+            headers = ['frequency'] + list(metrics.keys())
+            f.write(','.join(headers) + '\n')
         
-        # Write throughput metrics
-        f.write(f'{request_throughput:.2f},{output_throughput:.2f},')
-        f.write(f'{total_token_throughput:.2f}\n')
+        # Write metrics
+        values = [str(freq)] + [f'{value:.2f}' for value in metrics.values()]
+        f.write(','.join(values) + '\n')
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:

@@ -1,7 +1,42 @@
 #!/bin/bash
 
-# Add this at the beginning of the script if not already present
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [-h] [job_yaml_path]"
+    echo
+    echo "Run benchmarks with different GPU frequencies"
+    echo
+    echo "Options:"
+    echo "  -h              Show this help message"
+    echo "  job_yaml_path   Path to the job YAML file"
+    echo "                  (default: ./vllm-benchmarking-job.yaml)"
+    exit 1
+}
+
+# Parse command line options
+while getopts "h" opt; do
+    case ${opt} in
+        h )
+            show_usage
+            ;;
+        \? )
+            show_usage
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
+# Set job YAML path
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BASE_JOB_YAML="${1:-"$SCRIPT_DIR/vllm-benchmarking-job.yaml"}"
+
+# Verify the job yaml exists
+if [ ! -f "$BASE_JOB_YAML" ]; then
+    echo "Error: Job YAML file not found: $BASE_JOB_YAML"
+    exit 1
+fi
+
+# Add this at the beginning of the script if not already present
 RESULTS_DIR="${RESULTS_DIR:-"/data/results"}"  # Default to /data/results if not set
 
 # Create results directory if it doesn't exist
@@ -13,7 +48,6 @@ PERF_SUMMARY="$RESULTS_DIR/performance_summary.csv"
 
 # Initialize summary files with headers
 echo "frequency,average_power,std_dev,p95_power,p99_power" > "$POWER_SUMMARY"
-echo "frequency,mean_ttft_ms,median_ttft_ms,std_ttft_ms,p99_ttft_ms,mean_tpot_ms,median_tpot_ms,std_tpot_ms,p99_tpot_ms,mean_itl_ms,median_itl_ms,std_itl_ms,p99_itl_ms,request_throughput,output_throughput,total_token_throughput" > "$PERF_SUMMARY"
 
 # Setup Python virtual environment
 VENV_DIR="$HOME/.venv/benchmark_venv"
@@ -27,17 +61,6 @@ source "$VENV_DIR/bin/activate"
 
 # Install requirements
 pip install -r "$SCRIPT_DIR/data-process-scripts/requirements.txt"
-
-# Function to calculate statistics from benchmark results
-process_benchmark_results() {
-    local freq=$1
-    local result_file="$RESULTS_DIR/benchmark_results_${freq}mhz.json"
-    
-    python3 "$SCRIPT_DIR/data-process-scripts/process_benchmark_results.py" \
-        "$result_file" \
-        "$PERF_SUMMARY" \
-        "$freq"
-}
 
 # Set default memory and graphics clock if not already set
 MEM_CLOCK=${MEM_CLOCK:-"877"}
@@ -64,7 +87,7 @@ for freq in "${FREQUENCIES[@]}"; do
     
     # Create a temporary job yaml with frequency-specific names
     TMP_JOB_YAML="/tmp/vllm-benchmark-job-${freq}.yaml"
-    sed "s/name: vllm-benchmark-job/name: vllm-benchmark-job-${freq}/" "$SCRIPT_DIR/vllm-benchmarking-job.yaml" | \
+    sed "s/name: vllm-benchmark-job/name: vllm-benchmark-job-${freq}/" "$BASE_JOB_YAML" | \
     sed "s/benchmark_results.json/benchmark_results_${freq}mhz.json/" > "$TMP_JOB_YAML"
     
     # Set GPU frequency using MEM_CLOCK variable
@@ -101,7 +124,10 @@ for freq in "${FREQUENCIES[@]}"; do
         "$freq"
     
     # Process benchmark results
-    process_benchmark_results $freq
+    python3 "$SCRIPT_DIR/data-process-scripts/process_benchmark_results.py" \
+        "$RESULTS_DIR/benchmark_results_${freq}mhz.json" \
+        "$PERF_SUMMARY" \
+        "$freq"
     
     # Cleanup
     kubectl delete job vllm-benchmark-job-${freq}
@@ -113,9 +139,6 @@ sudo nvidia-smi -ac ${MEM_CLOCK},${MAX_CLOCK}
 
 # Deactivate virtual environment
 deactivate
-
-# Clean up virtual environment
-rm -rf "$VENV_DIR"
 
 echo "Benchmark complete. Results available in $RESULTS_DIR"
 echo "Performance summary: $PERF_SUMMARY"

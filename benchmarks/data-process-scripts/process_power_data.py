@@ -23,8 +23,7 @@ def process_power_data(power_file, power_summary, freq):
     
     # Append to summary file
     with open(power_summary, 'a') as f:
-        f.write(f'{freq},{stats["mean"]:.2f},{stats["std"]:.2f},')
-        f.write(f'{stats["p95"]:.2f},{stats["p99"]:.2f}\n')
+        f.write(f'{freq},{stats["mean"]:.2f},{stats["std"]:.2f},{stats["p95"]:.2f},{stats["p99"]:.2f}\n')
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
