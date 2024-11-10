@@ -28,11 +28,11 @@ spec:
         - --health-probe-bind-address=:8081
         securityContext:
           privileged: true
+          runAsUser: 0
           capabilities:
             add:
-              - SYS_ADMIN
-              - CAP_SYS_NICE
               - ALL
+          allowPrivilegeEscalation: true
         env:
         - name: NAMESPACE
           valueFrom:
@@ -45,7 +45,11 @@ spec:
         - name: NVIDIA_VISIBLE_DEVICES
           value: "all"
         - name: NVIDIA_DRIVER_CAPABILITIES
-          value: "compute,utility,compat32"
+          value: "compute,utility,video"
+        - name: NVIDIA_REQUIRE_CUDA
+          value: "cuda>=11.0"
+        - name: NVIDIA_MIG_CONFIG_DEVICES
+          value: "all"
         volumeMounts:
         - name: nvidia-management
           mountPath: /usr/bin/nvidia-smi
@@ -77,13 +81,37 @@ spec:
             port: health
           initialDelaySeconds: 5
           periodSeconds: 10
+      initContainers:
+      - name: gpu-init
+        image: nvidia/cuda:11.0-base
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          nvidia-smi -pm 1 || true
+          nvidia-smi --query-gpu=gpu_name,gpu_uuid,compute_mode,persistence_mode --format=csv
+          chmod 666 /dev/nvidia* || true
+        securityContext:
+          privileged: true
       volumes:
-      - name: nvidia-management
+      - name: cpu-freq
         hostPath:
-          path: /usr/bin/nvidia-smi
-      - name: nvidia-libraries
+          path: /sys/devices/system/cpu
+      - name: nvidia-bindings
+        hostPath:
+          path: /usr/local/nvidia
+      - name: nvidia-devices
+        hostPath:
+          path: /dev
+      - name: nvidia-caps
+        hostPath:
+          path: /dev/nvidia-caps
+      - name: nvidia-libs
         hostPath:
           path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+      - name: nvidia-smi
+        hostPath:
+          path: /usr/bin/nvidia-smi
       tolerations:
       - key: nvidia.com/gpu
         operator: Exists
