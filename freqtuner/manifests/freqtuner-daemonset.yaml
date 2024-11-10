@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: freqtuner
+      annotations:
+        nvidia.com/gpu-driver-capabilities: "compute,utility,compat32"
     spec:
       serviceAccountName: freqtuner
       nodeSelector:
@@ -26,6 +28,11 @@ spec:
         - --health-probe-bind-address=:8081
         securityContext:
           privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - CAP_SYS_NICE
+              - ALL
         env:
         - name: NAMESPACE
           valueFrom:
@@ -35,11 +42,15 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility,compat32"
         volumeMounts:
-        - name: cpu-freq
-          mountPath: /sys/devices/system/cpu
-        - name: nvidia-bindings
-          mountPath: /usr/local/nvidia
+        - name: nvidia-management
+          mountPath: /usr/bin/nvidia-smi
+        - name: nvidia-libraries
+          mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
         resources:
           limits:
             cpu: 200m
@@ -67,11 +78,13 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-      - name: cpu-freq
+      - name: nvidia-management
         hostPath:
-          path: /sys/devices/system/cpu
-      - name: nvidia-bindings
+          path: /usr/bin/nvidia-smi
+      - name: nvidia-libraries
         hostPath:
-          path: /usr/local/nvidia
+          path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
       tolerations:
-      - operator: "Exists"
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

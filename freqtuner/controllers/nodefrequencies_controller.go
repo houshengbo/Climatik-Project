@@ -193,8 +193,7 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 
 	// Add verification of NVML initialization
 	if !r.isNVMLInitialized() {
-		log.Error(fmt.Errorf("NVML not initialized"),
-			"attempting re-initialization")
+		log.Error(fmt.Errorf("NVML not initialized"), "attempting re-initialization", "action", "reinit", "status", "failed")
 		if err := r.InitializeNVML(); err != nil {
 			return fmt.Errorf("failed to re-initialize NVML: %v", err)
 		}
@@ -264,9 +263,9 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 
 			log.Info("Current GPU state",
 				"UUID", gpuSpec.UUID,
-				"graphicsClock", currentGraphicsFreq,
-				"smClock", currentSMClock,
-				"memClock", currentMemClock)
+				"graphicsClock", int32(currentGraphicsFreq),
+				"smClock", int32(currentSMClock),
+				"memClock", int32(currentMemClock))
 
 			// Get supported clocks for this GPU
 			r.cacheMutex.RLock()
@@ -280,9 +279,10 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 			ret = device.SetApplicationsClocks(uint32(gpuSpec.MemoryFrequency), closestFreq)
 			if ret != nvml.SUCCESS {
 				log.Error(fmt.Errorf("failed to set application clocks: %v", ret),
+					"error setting application clocks",
 					"UUID", gpuSpec.UUID,
-					"targetFrequency", closestFreq,
-					"memoryFrequency", gpuSpec.MemoryFrequency)
+					"targetFrequency", fmt.Sprintf("%d", closestFreq),
+					"memoryFrequency", fmt.Sprintf("%d", gpuSpec.MemoryFrequency))
 				continue
 			}
 
@@ -309,10 +309,10 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 
 			log.Info("GPU clocks after update",
 				"UUID", gpuSpec.UUID,
-				"targetFrequency", closestFreq,
-				"currentGraphicsClock", newGraphicsClock,
-				"currentSMClock", newSMClock,
-				"currentMemClock", newMemClock)
+				"targetFrequency", fmt.Sprintf("%d", closestFreq),
+				"currentGraphicsClock", int32(newGraphicsClock),
+				"currentSMClock", int32(newSMClock),
+				"currentMemClock", int32(newMemClock))
 		}
 	}
 

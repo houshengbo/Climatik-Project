@@ -2,18 +2,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug FreqTuner Controller",
+            "name": "Remote Debug Freqtuner",
             "type": "go",
             "request": "attach",
             "mode": "remote",
-            "host": "fmaas2",
+            "remotePath": "/root/go/src/github.com/Climatik-Project/Climatik-Project/freqtuner",
             "port": 2345,
+            "host": "fmaas2",
+            "showLog": true,
+            "trace": "verbose",
+            "substitutePath": [
+                {
+                    "from": "${workspaceFolder}",
+                    "to": "/root/go/src/github.com/Climatik-Project/Climatik-Project/freqtuner"
+                }
+            ],
             "env": {
-                "NAMESPACE": "climatik-project",
-                "KUBECONFIG": "/root/.kube/config"
+                "NODE_NAME": "kind-control-plane",
+                "KUBECONFIG": "/root/.kube/config"  // Add this if needed
             },
-            "remoteRoot": "/root/go/src/github.com/Climatik-Project/Climatik-Project/freqtuner",
-            "showLog": true
+            "stopOnEntry": true,
+            "apiVersion": 2,
+            "debugAdapter": "dlv-dap"
         },
         {
             "name": "Debug Powercapping Controller",
