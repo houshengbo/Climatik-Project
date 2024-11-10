@@ -33,10 +33,12 @@ func main() {
 	var metricsAddr string
 	var probeAddr string
 	var syncPeriod time.Duration
+	var enableLeaderElection bool
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.DurationVar(&syncPeriod, "sync-period", 10*time.Second, "The minimum frequency at which watched resources are reconciled.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false, "Enable leader election for controller manager.")
 
 	opts := zap.Options{
 		Development: true,
@@ -59,7 +61,7 @@ func main() {
 			BindAddress: metricsAddr,
 		},
 		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         false,
+		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "freqtuning-recommender.climatik.io",
 	})
 	if err != nil {

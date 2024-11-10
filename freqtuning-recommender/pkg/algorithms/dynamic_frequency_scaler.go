@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/csv"
 	"os"
-	"strconv"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"strconv"
+	"sync"
 )
 
 type PowerProfile struct {
 	Frequency    int32
 	AveragePower float64
-	StdDev      float64
-	P95Power    float64
-	P99Power    float64
+	StdDev       float64
+	P95Power     float64
+	P99Power     float64
 }
 
 func (p PowerProfile) getPowerForScalingFactor(factor float64) float64 {
@@ -33,6 +34,11 @@ type DynamicFrequencyScaler struct {
 	PowerCap      float64
 	powerProfile  []PowerProfile
 }
+
+var (
+	cachedPowerProfile []PowerProfile
+	once               sync.Once
+)
 
 func loadPowerProfile(filepath string) ([]PowerProfile, error) {
 	file, err := os.Open(filepath)
@@ -83,40 +89,43 @@ func loadPowerProfile(filepath string) ([]PowerProfile, error) {
 		profile = append(profile, PowerProfile{
 			Frequency:    int32(freq),
 			AveragePower: avgPower,
-			StdDev:      stdDev,
-			P95Power:    p95Power,
-			P99Power:    p99Power,
+			StdDev:       stdDev,
+			P95Power:     p95Power,
+			P99Power:     p99Power,
 		})
 	}
 
 	return profile, nil
 }
 
-func NewDynamicFrequencyScaler(ctx context.Context, scalingFactor float64, minFreq int32, powerCap float64) *DynamicFrequencyScaler {
-	profilePath := os.Getenv("POWER_PROFILE_PATH")
-	if profilePath == "" {
-		profilePath = "config/power_profiles/inf-V10016GB-profile.csv"
-	}
+// LoadAndCachePowerProfile loads the power profile once and caches it
+func LoadAndCachePowerProfile(ctx context.Context) error {
+	var loadErr error
+	once.Do(func() {
+		profilePath := os.Getenv("POWER_PROFILE_PATH")
+		if profilePath == "" {
+			profilePath = "config/power_profiles/inf-V10016GB-profile.csv"
+		}
 
-	profile, err := loadPowerProfile(profilePath)
-	if err != nil {
-		log.FromContext(ctx).Error(err, "Failed to load power profile")
-		return nil
-	}
+		cachedPowerProfile, loadErr = loadPowerProfile(profilePath)
+	})
+	return loadErr
+}
 
+func NewDynamicFrequencyScaler(scalingFactor float64, minFreq int32, powerCap float64) *DynamicFrequencyScaler {
 	return &DynamicFrequencyScaler{
 		ScalingFactor: scalingFactor,
 		MinFrequency:  minFreq,
 		PowerCap:      powerCap,
-		powerProfile:  profile,
+		powerProfile:  cachedPowerProfile,
 	}
 }
 
 func (d *DynamicFrequencyScaler) findFrequencyForPower(ctx context.Context, targetPower float64) int32 {
 	for _, entry := range d.powerProfile {
 		powerMetric := entry.getPowerForScalingFactor(d.ScalingFactor)
-		log.FromContext(ctx).Info("Checking power profile entry", 
-			"frequency", entry.Frequency, 
+		log.FromContext(ctx).Info("Checking power profile entry",
+			"frequency", entry.Frequency,
 			"powerMetric", powerMetric,
 			"scalingFactor", d.ScalingFactor)
 
@@ -132,4 +141,9 @@ func (d *DynamicFrequencyScaler) CalculateFrequency(ctx context.Context, powerBu
 	targetFreq := d.findFrequencyForPower(ctx, powerBudget)
 	log.FromContext(ctx).Info("Calculated target frequency", "powerBudget", powerBudget, "targetFreq", targetFreq)
 	return targetFreq
+}
+
+// UpdatePowerCap updates the power cap value
+func (d *DynamicFrequencyScaler) UpdatePowerCap(powerCap float64) {
+	d.PowerCap = powerCap
 }

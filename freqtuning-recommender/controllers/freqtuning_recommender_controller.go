@@ -12,21 +12,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	freqtunerv1alpha1 "github.com/Climatik-Project/Climatik-Project/freqtuner/api/v1alpha1"
+	"github.com/Climatik-Project/Climatik-Project/freqtuning-recommender/pkg/algorithms"
 	climatikv1alpha1 "github.com/Climatik-Project/Climatik-Project/powercapping-controller/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	freqtunerv1alpha1 "github.com/Climatik-Project/Climatik-Project/freqtuner/api/v1alpha1"
-	"github.com/Climatik-Project/Climatik-Project/freqtuning-recommender/pkg/algorithms"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 const (
-	defaultRecommenderName      = "freqtuning-recommender"
-	defaultNodeFrequencyNS     = "climatik-project"
-	reconcileInterval          = time.Minute
+	defaultRecommenderName = "freqtuning-recommender"
+	defaultNodeFrequencyNS = "climatik-project"
+	reconcileInterval      = time.Minute
 )
 
 var (
@@ -48,8 +48,8 @@ var (
 // FreqTuningRecommenderReconciler reconciles PowerCappingPolicy objects
 type FreqTuningRecommenderReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Config *rest.Config
+	Scheme     *runtime.Scheme
+	Config     *rest.Config
 	KubeClient kubernetes.Interface
 }
 
@@ -59,9 +59,9 @@ type FreqTuningRecommenderReconciler struct {
 
 func (r *FreqTuningRecommenderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	
+
 	// Add request details
-	log.Info("=== Starting reconciliation ===", 
+	log.Info("=== Starting reconciliation ===",
 		"request.namespace", req.Namespace,
 		"request.name", req.Name)
 
@@ -71,13 +71,13 @@ func (r *FreqTuningRecommenderReconciler) Reconcile(ctx context.Context, req ctr
 		log.Error(err, "Failed to list policies")
 		return ctrl.Result{}, err
 	}
-	log.Info("Found policies", 
+	log.Info("Found policies",
 		"count", len(policyList.Items),
 		"policies", getPolicyNames(policyList.Items))
 
 	// Process each policy
 	for _, policy := range policyList.Items {
-		log.Info("=== Processing policy ===", 
+		log.Info("=== Processing policy ===",
 			"name", policy.Name,
 			"namespace", policy.Namespace,
 			"powerCapLimit", policy.Spec.PowerCapLimit,
@@ -87,7 +87,7 @@ func (r *FreqTuningRecommenderReconciler) Reconcile(ctx context.Context, req ctr
 		// Check if this recommender should handle this policy
 		shouldHandle := false
 		for _, algo := range policy.Spec.CustomAlgorithms {
-			log.Info("Checking algorithm", 
+			log.Info("Checking algorithm",
 				"algo", algo.Name,
 				"recommender", recommenderName)
 			if algo.Name == recommenderName {
@@ -148,6 +148,11 @@ func (r *FreqTuningRecommenderReconciler) SetupWithManager(mgr ctrl.Manager) err
 		return fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
 	r.KubeClient = kubeClient
+
+	// Load and cache power profile once during startup
+	if err := algorithms.LoadAndCachePowerProfile(context.Background()); err != nil {
+		return fmt.Errorf("failed to load power profile: %w", err)
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&climatikv1alpha1.PowerCappingPolicy{}).
@@ -232,7 +237,7 @@ func (r *FreqTuningRecommenderReconciler) getGPUResourcesFromPods(ctx context.Co
 							uuid = strings.TrimSpace(uuid)
 							if uuid != "" && !contains(nodeResources[nodeName], uuid) {
 								nodeResources[nodeName] = append(nodeResources[nodeName], uuid)
-								log.Info("Found GPU device", 
+								log.Info("Found GPU device",
 									"pod", pod.Name,
 									"container", container.Name,
 									"node", nodeName,
@@ -261,11 +266,11 @@ type NodeGPUFrequencies map[string]map[string]int32
 func (r *FreqTuningRecommenderReconciler) calculateFrequencyAdjustments(ctx context.Context, nodeResources map[string][]string, policy *climatikv1alpha1.PowerCappingPolicy) (NodeGPUFrequencies, error) {
 	log := log.FromContext(ctx)
 
+	// Create a new scaler for this reconciliation
 	scaler := algorithms.NewDynamicFrequencyScaler(
-		ctx,
 		0.99,
 		300,
-		float64(policy.Spec.PowerCapLimit),
+		float64(policy.Spec.PowerCapLimit), // Set power cap directly
 	)
 
 	// Calculate per-GPU power budget
@@ -277,7 +282,7 @@ func (r *FreqTuningRecommenderReconciler) calculateFrequencyAdjustments(ctx cont
 
 	// Initialize result structure
 	nodeFreqs := make(NodeGPUFrequencies)
-	
+
 	// Calculate frequencies per node and GPU
 	for nodeName, gpuUUIDs := range nodeResources {
 		nodeFreqs[nodeName] = make(map[string]int32)
@@ -324,7 +329,7 @@ func (r *FreqTuningRecommenderReconciler) updateNodeFrequencies(ctx context.Cont
 
 		nodeFreq := &freqtunerv1alpha1.NodeFrequencies{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      nfName,  // Use the existing NF name instead of node name
+				Name:      nfName, // Use the existing NF name instead of node name
 				Namespace: nodeFrequencyNamespace,
 			},
 		}
@@ -340,7 +345,7 @@ func (r *FreqTuningRecommenderReconciler) updateNodeFrequencies(ctx context.Cont
 					if nodeFreq.Spec.GPUFrequencies[i].UUID == uuid {
 						nodeFreq.Spec.GPUFrequencies[i].GraphicsFrequency = newFreq
 						found = true
-						log.Info("Updated GPU frequency", 
+						log.Info("Updated GPU frequency",
 							"node", nodeName,
 							"uuid", uuid,
 							"graphicsFrequency", newFreq)
@@ -349,10 +354,10 @@ func (r *FreqTuningRecommenderReconciler) updateNodeFrequencies(ctx context.Cont
 				}
 				if !found {
 					nodeFreq.Spec.GPUFrequencies = append(nodeFreq.Spec.GPUFrequencies, freqtunerv1alpha1.GPUFrequencySpec{
-						UUID:             uuid,
+						UUID:              uuid,
 						GraphicsFrequency: newFreq,
 					})
-					log.Info("Added new GPU frequency", 
+					log.Info("Added new GPU frequency",
 						"node", nodeName,
 						"uuid", uuid,
 						"graphicsFrequency", newFreq)
@@ -366,9 +371,9 @@ func (r *FreqTuningRecommenderReconciler) updateNodeFrequencies(ctx context.Cont
 			return err
 		}
 
-		log.Info("NodeFrequencies CR updated", 
-			"node", nodeName, 
-			"operation", op, 
+		log.Info("NodeFrequencies CR updated",
+			"node", nodeName,
+			"operation", op,
 			"frequencies", gpuFreqs)
 	}
 
