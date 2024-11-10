@@ -51,10 +51,14 @@ spec:
         - name: NVIDIA_MIG_CONFIG_DEVICES
           value: "all"
         volumeMounts:
-        - name: nvidia-management
+        - name: nvidia-smi
           mountPath: /usr/bin/nvidia-smi
-        - name: nvidia-libraries
+        - name: nvidia-libs
           mountPath: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
+        - name: nvidia-devices
+          mountPath: /dev
+        - name: nvidia-caps
+          mountPath: /dev/nvidia-caps
         resources:
           limits:
             cpu: 200m
@@ -83,35 +87,43 @@ spec:
           periodSeconds: 10
       initContainers:
       - name: gpu-init
-        image: nvidia/cuda:11.0-base
+        image: nvidia/cuda:12.0.0-base-ubuntu22.04
         command: ["/bin/sh"]
         args:
         - -c
         - |
           nvidia-smi -pm 1 || true
           nvidia-smi --query-gpu=gpu_name,gpu_uuid,compute_mode,persistence_mode --format=csv
+          nvidia-smi --query-gpu=clocks.applications --format=csv || true
           chmod 666 /dev/nvidia* || true
+          ls -l /dev/nvidia* || true
         securityContext:
           privileged: true
       volumes:
-      - name: cpu-freq
+      - name: nvidia-smi
         hostPath:
-          path: /sys/devices/system/cpu
-      - name: nvidia-bindings
+          path: /usr/bin/nvidia-smi
+      - name: nvidia-libs
         hostPath:
-          path: /usr/local/nvidia
+          path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
       - name: nvidia-devices
         hostPath:
           path: /dev
       - name: nvidia-caps
         hostPath:
           path: /dev/nvidia-caps
-      - name: nvidia-libs
+      - name: nvidia-uvm
         hostPath:
-          path: /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1
-      - name: nvidia-smi
+          path: /dev/nvidia-uvm
+      - name: nvidia-uvm-tools
         hostPath:
-          path: /usr/bin/nvidia-smi
+          path: /dev/nvidia-uvm-tools
+      - name: nvidiactl
+        hostPath:
+          path: /dev/nvidiactl
+      - name: nvidia-modeset
+        hostPath:
+          path: /dev/nvidia-modeset
       tolerations:
       - key: nvidia.com/gpu
         operator: Exists
