@@ -60,6 +60,18 @@ if [ -f "manifests/rbac/serviceaccount.yaml" ]; then
     envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl delete -f - --ignore-not-found || true
 fi
 
+# Remove all NodeFrequencies CRs from all namespaces
+echo "Removing NodeFrequencies CRs from all namespaces..."
+kubectl get nodefrequencies.climatik.io --all-namespaces -o name | xargs -r kubectl delete --ignore-not-found || true
+
+# Remove all PowerCappingPolicies CRs from all namespaces
+echo "Removing PowerCappingPolicies CRs from all namespaces..."
+kubectl get powercappingpolicies.climatik.io --all-namespaces -o name | xargs -r kubectl delete --ignore-not-found || true
+
+# Wait for CRs to be deleted
+echo "Waiting for CRs to be deleted..."
+sleep 5
+
 # Remove FreqTuner CRDs
 echo "Removing FreqTuner CRDs..."
 cd "${PROJECT_ROOT}/freqtuner"
@@ -72,6 +84,22 @@ echo "Removing PowerCapping CRDs..."
 cd "${PROJECT_ROOT}/powercapping-controller"
 if [ -d "config/crd/bases" ]; then
     kubectl delete -f config/crd/bases/ --ignore-not-found || true
+fi
+
+# Remove FreqTuning Recommender
+echo "Removing FreqTuning Recommender..."
+cd "${PROJECT_ROOT}/freqtuning-recommender"
+if [ -f "manifests/freqtuning-recommender-deployment.yaml" ]; then
+    envsubst < "manifests/freqtuning-recommender-deployment.yaml" | kubectl delete -f - --ignore-not-found || true
+fi
+if [ -f "manifests/rbac/clusterrolebinding.yaml" ]; then
+    envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl delete -f - --ignore-not-found || true
+fi
+if [ -f "manifests/rbac/clusterrole.yaml" ]; then
+    envsubst < "manifests/rbac/clusterrole.yaml" | kubectl delete -f - --ignore-not-found || true
+fi
+if [ -f "manifests/rbac/serviceaccount.yaml" ]; then
+    envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl delete -f - --ignore-not-found || true
 fi
 
 # Remove namespace if empty

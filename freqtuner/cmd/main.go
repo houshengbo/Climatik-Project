@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -56,11 +57,14 @@ func main() {
 		namespace = constants.DefaultNamespace
 	}
 
-	nodeName, err := os.Hostname()
-	if err != nil {
-		setupLog.Error(err, "failed to get hostname")
+	// Get node name from environment variable instead of hostname
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		setupLog.Error(fmt.Errorf("NODE_NAME environment variable not set"), "unable to get node name")
 		os.Exit(1)
 	}
+
+	setupLog.Info("Running on node", "nodeName", nodeName)
 
 	cfg, err := ctrl.GetConfig()
 	if err != nil {

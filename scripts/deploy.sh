@@ -74,4 +74,12 @@ envsubst < "manifests/rbac/clusterrole.yaml" | kubectl apply -f -
 envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
 envsubst < "manifests/freqtuner-daemonset.yaml" | kubectl apply -f -
 
+# Deploy FreqTuning Recommender
+echo "Deploying FreqTuning Recommender..."
+cd "${PROJECT_ROOT}/freqtuning-recommender"
+envsubst < "manifests/rbac/serviceaccount.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/clusterrole.yaml" | kubectl apply -f -
+envsubst < "manifests/rbac/clusterrolebinding.yaml" | kubectl apply -f -
+envsubst < "manifests/freqtuning-recommender-deployment.yaml" | kubectl apply -f -
+
 echo "Deployment complete!" 

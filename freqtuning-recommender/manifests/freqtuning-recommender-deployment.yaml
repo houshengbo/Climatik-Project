@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: freqtuning-recommender
+  namespace: ${NAMESPACE}
+  labels:
+    app: freqtuning-recommender
+spec:
+  selector:
+    matchLabels:
+      app: freqtuning-recommender
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: freqtuning-recommender
+    spec:
+      serviceAccountName: freqtuning-recommender
+      containers:
+      - name: manager
+        image: ${IMAGE_REGISTRY}/freqtuning-recommender:${IMAGE_TAG}
+        imagePullPolicy: Always
+        args:
+        - --leader-elect=true
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
+        env:
+        - name: RECOMMENDER_NAME
+          value: "freqtuning-recommender"
+        - name: NODE_FREQUENCY_NAMESPACE
+          value: "${NAMESPACE}"
+        - name: MONITOR_INTERVAL
+          value: "${MONITOR_INTERVAL}"
+        - name: POWER_PROFILE_PATH
+          value: "/config/power_profiles/inf-V10016GB-profile.csv"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 10

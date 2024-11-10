@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: freqtuning-recommender-role
+rules:
+- apiGroups: ["climatik.io"]
+  resources: ["nodefrequencies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["climatik.io"]
+  resources: ["powercappingpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"] 

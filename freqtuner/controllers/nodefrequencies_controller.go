@@ -281,8 +281,8 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 			if ret != nvml.SUCCESS {
 				log.Error(fmt.Errorf("failed to set application clocks: %v", ret),
 					"UUID", gpuSpec.UUID,
-					"targetFreq", closestFreq,
-					"memFreq", gpuSpec.MemoryFrequency)
+					"targetFrequency", closestFreq,
+					"memoryFrequency", gpuSpec.MemoryFrequency)
 				continue
 			}
 
@@ -291,7 +291,7 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 			if ret != nvml.SUCCESS {
 				log.Error(fmt.Errorf("failed to set GPU locked clocks: %v", ret),
 					"UUID", gpuSpec.UUID,
-					"targetFreq", closestFreq)
+					"targetFrequency", closestFreq)
 			}
 
 			// Add persistence mode to prevent clock reset
@@ -309,7 +309,7 @@ func (r *NodeFrequenciesReconciler) updateGPUFrequencies(ctx context.Context, no
 
 			log.Info("GPU clocks after update",
 				"UUID", gpuSpec.UUID,
-				"targetFreq", closestFreq,
+				"targetFrequency", closestFreq,
 				"currentGraphicsClock", newGraphicsClock,
 				"currentSMClock", newSMClock,
 				"currentMemClock", newMemClock)
@@ -412,10 +412,10 @@ func (r *NodeFrequenciesReconciler) updateCPUFrequencies(ctx context.Context, no
 				}
 
 				log.Info("Updated CPU frequency",
-					"cpuId", cpuSpec.CoreID,
-					"oldFreq", currentFreqMHz,
-					"targetFreq", cpuSpec.Frequency,
-					"actualFreq", newFreqKHz/1000)
+					"cpuId", fmt.Sprintf("%d", cpuSpec.CoreID),
+					"oldFreq", fmt.Sprintf("%d", currentFreqMHz),
+					"targetFreq", fmt.Sprintf("%d", cpuSpec.Frequency),
+					"actualFreq", fmt.Sprintf("%d", newFreqKHz/1000))
 			}
 		}(cpuFreq)
 	}

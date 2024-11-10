@@ -24,6 +24,20 @@
             "port": 2345,
             "remoteRoot": "/root/go/src/github.com/Climatik-Project/Climatik-Project/powercapping-controller",
             "showLog": true
+        },
+        {
+            "name": "Debug FreqTuning Recommender",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "host": "fmaas2",
+            "port": 2345,
+            "env": {
+                "NAMESPACE": "climatik-project",
+                "KUBECONFIG": "/root/.kube/config"
+            },
+            "remoteRoot": "/root/go/src/github.com/Climatik-Project/Climatik-Project/freqtuning-recommender",
+            "showLog": true
         }
     ]
 }

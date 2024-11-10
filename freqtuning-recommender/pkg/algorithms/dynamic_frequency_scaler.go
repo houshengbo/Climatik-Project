@@ -1,9 +1,11 @@
 package algorithms
 
 import (
+	"context"
 	"encoding/csv"
 	"os"
 	"strconv"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type PowerProfile struct {
@@ -90,7 +92,7 @@ func loadPowerProfile(filepath string) ([]PowerProfile, error) {
 	return profile, nil
 }
 
-func NewDynamicFrequencyScaler(scalingFactor float64, minFreq int32, powerCap float64) *DynamicFrequencyScaler {
+func NewDynamicFrequencyScaler(ctx context.Context, scalingFactor float64, minFreq int32, powerCap float64) *DynamicFrequencyScaler {
 	profilePath := os.Getenv("POWER_PROFILE_PATH")
 	if profilePath == "" {
 		profilePath = "config/power_profiles/inf-V10016GB-profile.csv"
@@ -98,7 +100,7 @@ func NewDynamicFrequencyScaler(scalingFactor float64, minFreq int32, powerCap fl
 
 	profile, err := loadPowerProfile(profilePath)
 	if err != nil {
-		log.Error("Failed to load power profile", "error", err)
+		log.FromContext(ctx).Error(err, "Failed to load power profile")
 		return nil
 	}
 
@@ -110,10 +112,10 @@ func NewDynamicFrequencyScaler(scalingFactor float64, minFreq int32, powerCap fl
 	}
 }
 
-func (d *DynamicFrequencyScaler) findFrequencyForPower(targetPower float64) int32 {
+func (d *DynamicFrequencyScaler) findFrequencyForPower(ctx context.Context, targetPower float64) int32 {
 	for _, entry := range d.powerProfile {
 		powerMetric := entry.getPowerForScalingFactor(d.ScalingFactor)
-		log.Info("Checking power profile entry", 
+		log.FromContext(ctx).Info("Checking power profile entry", 
 			"frequency", entry.Frequency, 
 			"powerMetric", powerMetric,
 			"scalingFactor", d.ScalingFactor)
@@ -126,8 +128,8 @@ func (d *DynamicFrequencyScaler) findFrequencyForPower(targetPower float64) int3
 }
 
 // CalculateFrequency calculates the target frequency for a given power budget
-func (d *DynamicFrequencyScaler) CalculateFrequency(powerBudget float64) int32 {
-	targetFreq := d.findFrequencyForPower(powerBudget)
-	log.Info("Calculated target frequency", "powerBudget", powerBudget, "targetFreq", targetFreq)
+func (d *DynamicFrequencyScaler) CalculateFrequency(ctx context.Context, powerBudget float64) int32 {
+	targetFreq := d.findFrequencyForPower(ctx, powerBudget)
+	log.FromContext(ctx).Info("Calculated target frequency", "powerBudget", powerBudget, "targetFreq", targetFreq)
 	return targetFreq
 }
