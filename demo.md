@@ -132,3 +132,21 @@ kubectl get nf kind-control-plane -n climatik-project -oyaml
 - *FreqTuner to update NodeFrequencies CR and apply the changes*
 
 *Monitor these effects in the controller logs opened in the previous step*
+
+### Reset GPU Configuration (Optional)
+1. Reset GPU frequencies to default values
+```bash
+# Reset GPU 0
+sudo nvidia-smi -i 0 -rgc
+sudo nvidia-smi -i 0 -rmc
+
+# Reset GPU 1
+sudo nvidia-smi -i 1 -rgc
+sudo nvidia-smi -i 1 -rmc
+```
+
+2. Verify the frequency reset
+```bash
+nvidia-smi --query-gpu=gpu_name,clocks.current.graphics,clocks.current.memory --format=csv
+```
+*Purpose: Return GPU frequencies to their default settings after testing. The `-rgc` flag resets graphics clocks and `-rmc` resets memory clocks to their default values.*
