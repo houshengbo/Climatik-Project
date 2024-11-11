@@ -21,11 +21,8 @@ kubectl --namespace monitoring port-forward svc/grafana 3000:3000 --address 0.0.
 
 4. Check GPU configuration
 ```bash
-# Check GPU metrics (power, utilization, memory)
-nvidia-smi -i 0 --query-gpu=power.draw,utilization.gpu,utilization.memory --format=csv
-
-# If GPU frequencies are not set to default, run:
-sudo nvidia-smi -i 0 -ac 877,1380
+# Check GPU metrics (current frequencies)
+nvidia-smi --query-gpu=gpu_name,clocks.current.graphics,clocks.current.memory --format=csv
 ```
 *Purpose: Ensure GPU is configured correctly*
 
@@ -108,5 +105,30 @@ vllm-benchmark-job-h8tsr         1/1     Running   0          21s
 vllm-opt-125m-757564ffcf-8rv7s   1/1     Running   0          2d23h
 ```
 
+### Deploy and Monitor PowerCappingPolicy
+1. Deploy the PowerCappingPolicy for the vLLM server
+```bash
+kubectl create -f manifests/powercappingpolicy-sample.yaml
+```
 
+2. Verify the PowerCappingPolicy deployment
+```bash
+kubectl get powercappingpolicies
+```
+*Expected output should show `llm-inference-power-cap` policy*
 
+3. Monitor the effects
+```bash
+# Check the PowerCappingPolicy details
+kubectl get powercappingpolicies llm-inference-power-cap -oyaml
+
+# Check the NodeFrequencies CR status
+kubectl get nf kind-control-plane -n climatik-project -oyaml
+```
+
+*Purpose: The PowerCappingPolicy will trigger:*
+- *PowerCapping controller to monitor power usage*
+- *FreqTuning Recommender to suggest optimal frequencies*
+- *FreqTuner to update NodeFrequencies CR and apply the changes*
+
+*Monitor these effects in the controller logs opened in the previous step*
